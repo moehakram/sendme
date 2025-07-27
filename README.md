@@ -2,6 +2,7 @@
 
 **SendMe** adalah aplikasi web file manager berbasis Flask yang memungkinkan Anda untuk mengelola file dan folder melalui antarmuka web yang intuitif. Aplikasi ini sangat berguna untuk berbagi file di jaringan lokal atau mengelola file secara remote.
 
+
 ## Fitur Utama
 
 - **📁 File Browser**: Navigasi folder dengan breadcrumb navigation
@@ -49,8 +50,17 @@ python sendme.py --help
 
 Setelah menjalankan aplikasi, buka browser dan akses:
 - **Local**: `http://localhost:8080`
+
+Untuk mengakses dari perangkat lain, pastikan semua perangkat berada dalam segmen jaringan yang sama (misalnya menggunakan hotspot atau Wi-Fi yang sama):
 - **Network**: Gunakan IP yang ditampilkan di terminal
 - **Mobile**: Scan QR code yang ditampilkan
+
+## Screenshot
+
+<div style="display: flex; gap: 10px;">
+  <img src="docs/image.png" alt="Screenshot">
+  <img src="docs/by-phone.jpg" alt="Screenshot by phone" width="40%">
+</div>
 
 ## 🎯 Fitur Web Interface
 
