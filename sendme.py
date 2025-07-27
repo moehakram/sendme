@@ -10,7 +10,7 @@ import qrcode
 app = Flask(__name__)
 
 # Global variable untuk ROOT_DIR yang akan diset dari argparse
-ROOT_DIR = 'uploads'
+ROOT_DIR = '.'
 
 HTML_TEMPLATE = '''
 <!DOCTYPE html>
@@ -507,26 +507,31 @@ def generate_qr_code(url):
     except Exception as e:
         print(f"Could not generate QR code: {e}")
 
+def valid_directory(path):
+    abs_path = os.path.abspath(path)
+
+    if not os.path.exists(abs_path):
+        raise argparse.ArgumentTypeError(f"Directory '{path}' does not exist.")
+    if not os.path.isdir(abs_path):
+        raise argparse.ArgumentTypeError(f"Directory '{path}' is not a directory.")
+    if not os.access(abs_path, os.R_OK):
+        raise argparse.ArgumentTypeError(f"Directory '{path}' is not readable (permission denied).")
+
+    return abs_path
+
 def parse_arguments():
     """Parse command line arguments"""
     parser = argparse.ArgumentParser(
-        description="SendMe - Flask File Explorer",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog='''
-Examples:
-  python sendme.py                             # Default: ./uploads directory, port 8080
-  python sendme.py -r /home/user/documents     # Custom root directory
-  python sendme.py -p 8080                     # Custom port
-  python sendme.py -r /var/www -p 3000         # Custom root and port
-  python sendme.py --root /tmp --port 5000     # Long format options
-        '''
+        description="SendMe - Share files over HTTP using your browser",
+        formatter_class=argparse.RawDescriptionHelpFormatter
     )
     
     parser.add_argument(
-        '-r', '--root',
-        type=str,
-        default='uploads',
-        help='Root directory untuk file explorer (default: uploads)'
+        'directory',
+        type=valid_directory,
+        nargs="?",
+        default=".",
+        help="Directory to share (default: current directory)"
     )
     
     parser.add_argument(
@@ -544,7 +549,7 @@ Examples:
     )
     
     parser.add_argument(
-        '--no-qr',
+        '-q','--qr',
         action='store_true',
         help='Jangan tampilkan QR code'
     )
@@ -561,40 +566,18 @@ if __name__ == '__main__':
     args = parse_arguments()
     
     # Set global ROOT_DIR from arguments
-    ROOT_DIR = os.path.abspath(args.root)
-    
-    # Create root directory if it doesn't exist
-    try:
-        os.makedirs(ROOT_DIR, exist_ok=True)
-        print(f"✓ Root directory: {ROOT_DIR}")
-    except PermissionError:
-        print(f"✗ Error: Permission denied creating directory {ROOT_DIR}")
-        exit(1)
-    except Exception as e:
-        print(f"✗ Error creating directory {ROOT_DIR}: {e}")
-        exit(1)
-    
-    # Check if directory is readable
-    if not os.access(ROOT_DIR, os.R_OK):
-        print(f"✗ Error: Cannot read directory {ROOT_DIR}")
-        exit(1)
+    ROOT_DIR = os.path.abspath(args.directory)
     
     # Get server info
     local_ip = get_local_ip()
     url = f"http://{local_ip}:{args.port}"
     
     print("=" * 50)
-    print("🚀 Flask File Explorer")
+    print("SendMe")
     print("=" * 50)
-    print(f"Root Directory: {ROOT_DIR}")
-    print(f"Server URL:     {url}")
-    print(f"Host:           {args.host}")
-    print(f"Port:           {args.port}")
-    print(f"Debug Mode:     {'ON' if args.debug else 'OFF'}")
-    print("=" * 50)
-    
-    # Generate QR code if not disabled
-    if not args.no_qr:
+    print(f"Root Directory: {ROOT_DIR}")    
+    # Generate QR code if enable
+    if args.qr:
         print("QR Code:")
         generate_qr_code(url)
         print("=" * 50)
