@@ -11,7 +11,7 @@ export async function fetchFiles(path: string = ''): Promise<FilesResponse> {
     if (!response.ok) {
         throw new Error(data.error || 'Failed to load files');
     }
-    
+
     return data;
 }
 

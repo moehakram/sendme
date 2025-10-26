@@ -16,26 +16,19 @@ export interface Breadcrumb {
 }
 
 export interface FilesResponse {
+  current_path: string;
   items: FileItem[];
   breadcrumbs: Breadcrumb[];
 }
 
-export interface ApiResponse {
+interface ApiResponse {
   message?: string;
   error?: string;
 }
 
-export interface UploadResponse extends ApiResponse {
-  path?: string;
-}
+export interface UploadResponse extends ApiResponse {}
 
 export interface DeleteResponse extends ApiResponse {}
-
-export interface AppState {
-  currentPath: string;
-  files: FileItem[];
-  breadcrumbs: Breadcrumb[];
-}
 
 export interface Elements {
   fileList: HTMLElement;

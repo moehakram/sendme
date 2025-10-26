@@ -12,27 +12,21 @@ import {
     clearUploadList 
 } from './components/uploadModal';
 import { showLoading, hideLoading, showError, showSuccess } from './utils/ui';
-import type { AppState, Elements } from './types';
+import type { Elements } from './types';
 
-// State global (simple object)
-let appState: AppState = {
-    currentPath: '',
-    files: [],
-    breadcrumbs: []
-};
+
+let currentPath: string = '';
 
 // DOM elements
 const elements: Partial<Elements> = {};
 
 // Load files dari server
 export async function loadFiles(path: string = ''): Promise<void> {
-    appState.currentPath = path;
     showLoading(elements as Elements);
-
+    
     try {
         const data = await fetchFiles(path);
-        appState.files = data.items;
-        appState.breadcrumbs = data.breadcrumbs;
+        currentPath = data.current_path;
         
         // Render breadcrumb
         renderBreadcrumb((elements as Elements).breadcrumb, data.breadcrumbs, loadFiles);
@@ -71,7 +65,7 @@ async function handleDelete(path: string, name: string): Promise<void> {
     try {
         const data = await deleteItem(path);
         showSuccess(data.message || 'Item deleted successfully');
-        loadFiles(appState.currentPath);
+        loadFiles(currentPath);
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
         showError(elements as Elements, errorMessage);
@@ -91,7 +85,7 @@ async function handleUpload(files: FileList): Promise<void> {
 
     setTimeout(() => {
         hideUploadModal((elements as Elements).uploadModal);
-        loadFiles(appState.currentPath);
+        loadFiles(currentPath);
     }, 1000);
 }
 
@@ -100,7 +94,7 @@ async function uploadSingleFile(file: File): Promise<void> {
     const item = addUploadItem((elements as Elements).uploadList, file.name);
 
     try {
-        await uploadFile(file, appState.currentPath);
+        await uploadFile(file, currentPath);
         updateUploadStatus(item, true);
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Upload failed';
