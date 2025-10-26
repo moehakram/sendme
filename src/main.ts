@@ -1,7 +1,7 @@
 import './style.css'
-import { initApp } from './app.js'
+import { initApp } from './app'
 
-document.querySelector('#app').innerHTML = `
+document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   <div>
       <!-- Header -->
       <header class="header">
@@ -46,7 +46,6 @@ document.querySelector('#app').innerHTML = `
           </div>
       </div>
   </div>
-`
+  `;
 
-// Initialize app
-initApp()
+initApp();

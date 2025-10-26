@@ -1,12 +1,27 @@
 // FileList Component - Fungsi untuk render daftar file dan folder
+import type { FileItem, FileListHandlers } from '../types';
 
-export function renderFileList(container, items, handlers) {
+export function renderFileList(
+    container: HTMLElement, 
+    items: FileItem[], 
+    handlers: FileListHandlers
+): void {
     if (items.length === 0) {
         container.innerHTML = '<div class="empty-state">📭 No files or folders</div>';
         return;
     }
 
-    let html = '<table class="file-table"><thead><tr><th>Name</th><th>Size</th><th>Modified</th><th>Actions</th></tr></thead><tbody>';
+    let html = `
+    <table class="file-table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Size</th>
+                <th>Modified</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>`;
 
     items.forEach(item => {
         const icon = item.is_directory ? '📁' : '📄';
@@ -36,17 +51,33 @@ export function renderFileList(container, items, handlers) {
     container.querySelectorAll('.file-link').forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
-            const path = e.target.closest('.file-link').dataset.path;
-            const isDir = e.target.closest('.file-link').dataset.isDir === 'true';
-            handlers.onItemClick(path, isDir);
+            const target = (e.target as HTMLElement).closest('.file-link') as HTMLElement;
+            const path = target.dataset.path;
+            const isDir = target.dataset.isDir === 'true';
+            if (path !== undefined) {
+                handlers.onItemClick(path, isDir);
+            }
         });
     });
 
     container.querySelectorAll('.download-btn').forEach(btn => {
-        btn.addEventListener('click', () => handlers.onDownload(btn.dataset.path));
+        btn.addEventListener('click', () => {
+            const element = btn as HTMLElement;
+            const path = element.dataset.path;
+            if (path !== undefined) {
+                handlers.onDownload(path);
+            }
+        });
     });
 
     container.querySelectorAll('.delete-btn').forEach(btn => {
-        btn.addEventListener('click', () => handlers.onDelete(btn.dataset.path, btn.dataset.name));
+        btn.addEventListener('click', () => {
+            const element = btn as HTMLElement;
+            const path = element.dataset.path;
+            const name = element.dataset.name;
+            if (path !== undefined && name !== undefined) {
+                handlers.onDelete(path, name);
+            }
+        });
     });
 }

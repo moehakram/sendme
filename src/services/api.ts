@@ -1,8 +1,10 @@
 // API Service - Fungsi-fungsi untuk komunikasi dengan server
-export const API_BASE_URL = '';
-// export const API_BASE_URL = 'http://127.0.0.1:8000';
+import type { FilesResponse, UploadResponse, DeleteResponse } from '../types';
 
-export async function fetchFiles(path = '') {
+const API_BASE_URL = '';
+// const API_BASE_URL = 'http://127.0.0.1:8000';
+
+export async function fetchFiles(path: string = ''): Promise<FilesResponse> {
     const response = await fetch(`${API_BASE_URL}/api/files?path=${encodeURIComponent(path)}`);
     const data = await response.json();
     
@@ -13,7 +15,7 @@ export async function fetchFiles(path = '') {
     return data;
 }
 
-export async function uploadFile(file, path) {
+export async function uploadFile(file: File, path: string): Promise<UploadResponse> {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('path', path);
@@ -31,7 +33,7 @@ export async function uploadFile(file, path) {
     return data;
 }
 
-export async function deleteItem(path) {
+export async function deleteItem(path: string): Promise<DeleteResponse> {
     const response = await fetch(`${API_BASE_URL}/api/delete`, {
         method: 'DELETE',
         headers: { 
@@ -48,6 +50,6 @@ export async function deleteItem(path) {
     return data;
 }
 
-export function getDownloadUrl(path) {
+export function getDownloadUrl(path: string): string {
     return `${API_BASE_URL}/api/download?path=${encodeURIComponent(path)}`;
 }

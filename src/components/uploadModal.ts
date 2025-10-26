@@ -1,7 +1,8 @@
 // UploadModal Component - Fungsi untuk handle upload modal
+import type { Elements, FilesSelectedHandler } from '../types';
 
-export function initUploadModal(elements, onFilesSelected) {
-    const { uploadModal, uploadArea, fileInput } = elements;
+export function initUploadModal(elements: Elements, onFilesSelected: FilesSelectedHandler): void {
+    const { uploadArea, fileInput } = elements;
 
     // Upload area click
     uploadArea.addEventListener('click', () => {
@@ -21,28 +22,29 @@ export function initUploadModal(elements, onFilesSelected) {
     uploadArea.addEventListener('drop', (e) => {
         e.preventDefault();
         uploadArea.classList.remove('dragover');
-        if (onFilesSelected) {
+        if (e.dataTransfer?.files && onFilesSelected) {
             onFilesSelected(e.dataTransfer.files);
         }
     });
 
     // File input change
     fileInput.addEventListener('change', (e) => {
-        if (onFilesSelected) {
-            onFilesSelected(e.target.files);
+        const target = e.target as HTMLInputElement;
+        if (target.files && onFilesSelected) {
+            onFilesSelected(target.files);
         }
     });
 }
 
-export function showUploadModal(modal) {
+export function showUploadModal(modal: HTMLElement): void {
     modal.style.display = 'flex';
 }
 
-export function hideUploadModal(modal) {
+export function hideUploadModal(modal: HTMLElement): void {
     modal.style.display = 'none';
 }
 
-export function addUploadItem(uploadList, fileName) {
+export function addUploadItem(uploadList: HTMLElement, fileName: string): HTMLElement {
     const item = document.createElement('div');
     item.className = 'upload-item';
     item.innerHTML = `
@@ -53,17 +55,19 @@ export function addUploadItem(uploadList, fileName) {
     return item;
 }
 
-export function updateUploadStatus(item, success, message = '') {
+export function updateUploadStatus(item: HTMLElement, success: boolean, message: string = ''): void {
     const status = item.querySelector('.upload-status');
-    if (success) {
-        status.textContent = '✓ Done';
-        item.classList.add('success');
-    } else {
-        status.textContent = `✗ ${message}`;
-        item.classList.add('error');
+    if (status) {
+        if (success) {
+            status.textContent = '✓ Done';
+            item.classList.add('success');
+        } else {
+            status.textContent = `✗ ${message}`;
+            item.classList.add('error');
+        }
     }
 }
 
-export function clearUploadList(uploadList) {
+export function clearUploadList(uploadList: HTMLElement): void {
     uploadList.innerHTML = '';
 }

@@ -1,6 +1,11 @@
 // Breadcrumb Component - Fungsi untuk render breadcrumb navigation
+import type { Breadcrumb, NavigateHandler } from '../types';
 
-export function renderBreadcrumb(container, breadcrumbs, onNavigate) {
+export function renderBreadcrumb(
+    container: HTMLElement, 
+    breadcrumbs: Breadcrumb[], 
+    onNavigate: NavigateHandler
+): void {
     let html = '<a href="#" data-path="">🏠 Home</a>';
 
     if (breadcrumbs && breadcrumbs.length > 0) {
@@ -15,7 +20,11 @@ export function renderBreadcrumb(container, breadcrumbs, onNavigate) {
     container.querySelectorAll('a').forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
-            onNavigate(e.target.dataset.path);
+            const target = e.target as HTMLAnchorElement;
+            const path = target.dataset.path;
+            if (path !== undefined) {
+                onNavigate(path);
+            }
         });
     });
 }
