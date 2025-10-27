@@ -26,13 +26,13 @@ export async function loadFiles(path: string = ''): Promise<void> {
     showLoading(elements);
     
     try {
-        const response = await fetchFiles(path);
+        const data = await fetchFiles(path);
         
         // Render breadcrumb
-        renderBreadcrumb((elements).breadcrumb, response.data.breadcrumbs, loadFiles);
+        renderBreadcrumb((elements).breadcrumb, data.breadcrumbs, loadFiles);
         
         // Render file list
-        renderFileList((elements).fileList, response.data.entries, {
+        renderFileList((elements).fileList, data.entries, {
             onItemClick: (path: string, isDir: boolean) => {
                 if (isDir) {
                     loadFiles(path);

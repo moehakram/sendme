@@ -1,10 +1,10 @@
 // API Service - Fungsi-fungsi untuk komunikasi dengan server
-import type { FilesResponse, UploadResponse, DeleteResponse } from '../types';
+import type { FilesResponse, UploadResponse, DeleteResponse, FileData } from '../types';
 
 const API_BASE_URL = '';
 // const API_BASE_URL = 'http://127.0.0.1:8000';
 
-export async function fetchFiles(path: string = ''): Promise<FilesResponse> {
+export async function fetchFiles(path: string = ''): Promise<FileData> {
     const response = await fetch(`${API_BASE_URL}/api/files?path=${encodeURIComponent(path)}`);
     const data: FilesResponse = await response.json();
     
@@ -12,7 +12,7 @@ export async function fetchFiles(path: string = ''): Promise<FilesResponse> {
         throw new Error(data.message || 'Failed to load files');
     }
 
-    return data;
+    return data.data;
 }
 
 export async function uploadFile(file: File, path: string): Promise<UploadResponse> {

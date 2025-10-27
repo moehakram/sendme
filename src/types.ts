@@ -17,16 +17,18 @@ interface ApiResponse {
   message: string;
 }
 
-export interface FilesResponse extends ApiResponse {
-  data : {
-    entries: FileItem[];
-    breadcrumbs: Breadcrumb[];
-  }
+export interface FileData{
+  entries: FileItem[];
+  breadcrumbs: Breadcrumb[];
 }
 
-export interface UploadResponse extends ApiResponse {}
+export interface FilesResponse extends ApiResponse {
+  data : FileData
+}
 
-export interface DeleteResponse extends ApiResponse {}
+export type UploadResponse = ApiResponse
+
+export type DeleteResponse = ApiResponse
 
 export interface Elements {
   fileList: HTMLElement;
