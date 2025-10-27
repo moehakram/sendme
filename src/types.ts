@@ -4,10 +4,8 @@ export interface FileItem {
   name: string;
   path: string;
   is_directory: boolean;
-  size: number;
-  size_formatted: string;
-  modified: string;
-  modified_formatted: string;
+  size: string;
+  modified_at: string;
 }
 
 export interface Breadcrumb {
@@ -15,15 +13,15 @@ export interface Breadcrumb {
   path: string;
 }
 
-export interface FilesResponse {
-  current_path: string;
-  items: FileItem[];
-  breadcrumbs: Breadcrumb[];
+interface ApiResponse {
+  message: string;
 }
 
-interface ApiResponse {
-  message?: string;
-  error?: string;
+export interface FilesResponse extends ApiResponse {
+  data : {
+    entries: FileItem[];
+    breadcrumbs: Breadcrumb[];
+  }
 }
 
 export interface UploadResponse extends ApiResponse {}
