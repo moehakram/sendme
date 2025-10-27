@@ -25,7 +25,7 @@ export function renderFileList(
 
     items.forEach(item => {
         const icon = item.is_directory ? '📁' : '📄';
-        const sizeDisplay = item.is_directory ? '-' : item.size_formatted;
+        const sizeDisplay = item.is_directory ? '-' : item.size;
         
         html += `
             <tr class="file-row ${item.is_directory ? 'directory' : 'file'}">
@@ -35,7 +35,7 @@ export function renderFileList(
                     </a>
                 </td>
                 <td>${sizeDisplay}</td>
-                <td>${item.modified_formatted}</td>
+                <td>${item.modified_at}</td>
                 <td>
                     ${!item.is_directory ? `<button class="btn btn-sm download-btn" data-path="${item.path}">⬇️</button>` : ''}
                     <button class="btn btn-sm btn-danger delete-btn" data-path="${item.path}" data-name="${item.name}">🗑️</button>
