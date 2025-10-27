@@ -18,21 +18,21 @@ import type { Elements } from './types';
 let currentPath: string = '';
 
 // DOM elements
-const elements: Partial<Elements> = {};
+let elements = {} as Elements;
 
 // Load files dari server
 export async function loadFiles(path: string = ''): Promise<void> {
-    showLoading(elements as Elements);
+    currentPath = path;
+    showLoading(elements);
     
     try {
-        const data = await fetchFiles(path);
-        currentPath = data.current_path;
+        const response = await fetchFiles(path);
         
         // Render breadcrumb
-        renderBreadcrumb((elements as Elements).breadcrumb, data.breadcrumbs, loadFiles);
+        renderBreadcrumb((elements).breadcrumb, response.data.breadcrumbs, loadFiles);
         
         // Render file list
-        renderFileList((elements as Elements).fileList, data.items, {
+        renderFileList((elements).fileList, response.data.entries, {
             onItemClick: (path: string, isDir: boolean) => {
                 if (isDir) {
                     loadFiles(path);
@@ -44,10 +44,10 @@ export async function loadFiles(path: string = ''): Promise<void> {
             onDelete: handleDelete
         });
         
-        hideLoading(elements as Elements);
+        hideLoading(elements);
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-        showError(elements as Elements, errorMessage);
+        showError(elements, errorMessage);
     }
 }
 
@@ -68,13 +68,13 @@ async function handleDelete(path: string, name: string): Promise<void> {
         loadFiles(currentPath);
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-        showError(elements as Elements, errorMessage);
+        showError(elements, errorMessage);
     }
 }
 
 // Handle upload files
 async function handleUpload(files: FileList): Promise<void> {
-    clearUploadList((elements as Elements).uploadList);
+    clearUploadList((elements).uploadList);
 
     for (let i = 0; i < files.length; i++) {
         const file = files[i];
@@ -84,14 +84,14 @@ async function handleUpload(files: FileList): Promise<void> {
     }
 
     setTimeout(() => {
-        hideUploadModal((elements as Elements).uploadModal);
+        hideUploadModal((elements).uploadModal);
         loadFiles(currentPath);
     }, 1000);
 }
 
 // Upload single file
 async function uploadSingleFile(file: File): Promise<void> {
-    const item = addUploadItem((elements as Elements).uploadList, file.name);
+    const item = addUploadItem((elements).uploadList, file.name);
 
     try {
         await uploadFile(file, currentPath);
@@ -105,7 +105,7 @@ async function uploadSingleFile(file: File): Promise<void> {
 // Initialize app
 export function initApp(): void {
     // Ambil semua DOM elements
-   Object.assign(elements, {
+   elements = {
         fileList: document.getElementById('file-list')!,
         breadcrumb: document.getElementById('breadcrumb')!,
         loading: document.getElementById('loading')!,
@@ -114,12 +114,12 @@ export function initApp(): void {
         uploadList: document.getElementById('upload-list')!,
         uploadArea: document.getElementById('upload-area')!,
         fileInput: document.getElementById('file-input') as HTMLInputElement
-    });
+    };
 
     // Setup upload button
     const uploadBtn = document.getElementById('upload-btn');
     uploadBtn?.addEventListener('click', () => {
-        showUploadModal((elements as Elements).uploadModal);
+        showUploadModal((elements).uploadModal);
     });
 
     // Setup modal close buttons
@@ -134,7 +134,7 @@ export function initApp(): void {
     });
 
     // Initialize upload modal
-    initUploadModal(elements as Elements, handleUpload);
+    initUploadModal(elements, handleUpload);
 
     // Load initial data
     loadFiles();
