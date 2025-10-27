@@ -12,6 +12,7 @@ export function renderFileList(
     }
 
     let html = `
+    <div class="table-wrapper">
     <table class="file-table">
         <thead>
             <tr>
@@ -44,7 +45,7 @@ export function renderFileList(
         `;
     });
 
-    html += '</tbody></table>';
+    html += '</tbody></table></div>';
     container.innerHTML = html;
 
     // Attach event listeners
