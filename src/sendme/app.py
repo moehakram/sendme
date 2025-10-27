@@ -1,18 +1,14 @@
 import sys
-from flask import Flask, abort, send_from_directory, jsonify, request
+from flask import Flask, abort, send_from_directory, request
 # from flask_cors import CORS
 from werkzeug.utils import secure_filename
 from datetime import datetime
 import os
 import shutil
-from sendme.service import format_size, get_root_dir, parse_arguments, print_server_info
-# Get the directory where this module is located
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-STATIC_DIR = os.path.join(BASE_DIR, 'dist')
+from sendme.service import error_response, format_size, get_root_dir, get_static_dir, parse_arguments, print_server_info, success_response
 
 # Create Flask app
-app = Flask(__name__, static_folder=STATIC_DIR, static_url_path='')
-
+app = Flask(__name__, static_folder=get_static_dir(__file__), static_url_path='')
 # CORS(app)
 
 @app.route('/api/files')
@@ -21,14 +17,14 @@ def api_list_files():
     try:
         path = request.args.get('path', '')
         root_dir = get_root_dir()
-        
+        print(root_dir)
         # Security: prevent directory traversal
         full_path = os.path.abspath(os.path.join(root_dir, path.lstrip('/')))
         if not full_path.startswith(root_dir):
-            return jsonify({'error': 'Access denied'}), 403
+            return error_response('Access denied', 403)
         
         if not os.path.exists(full_path):
-            return jsonify({'error': 'Path not found'}), 404
+            return error_response('Path not found', 404)
         
         items = []
         for item in sorted(os.listdir(full_path)):
@@ -42,10 +38,8 @@ def api_list_files():
                 'name': item,
                 'path': rel_path,
                 'is_directory': is_dir,
-                'size': stat.st_size if not is_dir else 0,
-                'size_formatted': format_size(stat.st_size) if not is_dir else '-',
-                'modified': datetime.fromtimestamp(stat.st_mtime).isoformat(),
-                'modified_formatted': datetime.fromtimestamp(stat.st_mtime).strftime('%Y-%m-%d %H:%M:%S')
+                'size': format_size(stat.st_size) if not is_dir else '-',
+                'modified_at': datetime.fromtimestamp(stat.st_mtime).strftime('%Y-%m-%d %H:%M:%S')
             })
         
         # Get breadcrumb path
@@ -59,13 +53,12 @@ def api_list_files():
             })
             current = '/'.join(parts[:-1])
         
-        return jsonify({
-            'current_path': path,
-            'items': items,
+        return success_response(data={
+            'entries': items,
             'breadcrumbs': breadcrumbs,
-        })
+        }, message='Get list files success')
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return error_response(str(e), 500)
 
 @app.route('/api/download')
 def api_download_file():
@@ -77,17 +70,17 @@ def api_download_file():
         # Security: prevent directory traversal
         full_path = os.path.abspath(os.path.join(root_dir, path.lstrip('/')))
         if not full_path.startswith(root_dir):
-            return jsonify({'error': 'Access denied'}), 403
+            return error_response('Access denied', 403)
         
         if not os.path.exists(full_path) or os.path.isdir(full_path):
-            return jsonify({'error': 'File not found'}), 404
+            return error_response('File not found', 404)
         
         directory = os.path.dirname(full_path)
         filename = os.path.basename(full_path)
         
         return send_from_directory(directory, filename, as_attachment=True)
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return error_response(str(e), 500)
 
 @app.route('/api/upload', methods=['POST'])
 def api_upload_file():
@@ -99,19 +92,18 @@ def api_upload_file():
         # Security: prevent directory traversal
         upload_dir = os.path.abspath(os.path.join(root_dir, path.lstrip('/')))
         if not upload_dir.startswith(root_dir):
-            return jsonify({'error': 'Access denied'}), 403
+            return error_response('Access denied', 403)
         
         if 'file' not in request.files:
-            return jsonify({'error': 'No file provided'}), 400
+            return error_response('No file provided', 400)
         
         file = request.files['file']
         if file.filename == '':
-            return jsonify({'error': 'No file selected'}), 400
+            return error_response('No file selected', 400)
         
         filename = secure_filename(file.filename)
         file_path = os.path.join(upload_dir, filename)
         
-        # Check if file already exists
         if os.path.exists(file_path):
             base, ext = os.path.splitext(filename)
             counter = 1
@@ -122,38 +114,45 @@ def api_upload_file():
         
         file.save(file_path)
         
-        return jsonify({
-            'message': f'File "{filename}" uploaded successfully'
-        })
+        return success_response(
+            message=f'File "{filename}" uploaded successfully',
+            status_code=201
+        )
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return error_response(str(e), 500)
 
 @app.route('/api/delete', methods=['DELETE'])
 def api_delete_file():
     """API endpoint to delete a file"""
     try:
         data = request.get_json()
+        if not data or 'path' not in data:
+            return error_response('Path is required', 400)
+        
         path = data.get('path', '')
         root_dir = get_root_dir()
         
         # Security: prevent directory traversal
         full_path = os.path.abspath(os.path.join(root_dir, path.lstrip('/')))
         if not full_path.startswith(root_dir):
-            return jsonify({'error': 'Access denied'}), 403
+            return error_response('Access denied', 403)
         
         if not os.path.exists(full_path):
-            return jsonify({'error': 'File not found'}), 404
+            return error_response('File not found', 404)
+        
+        item_type = 'directory' if os.path.isdir(full_path) else 'file'
+        item_name = os.path.basename(full_path)
         
         if os.path.isdir(full_path):
             shutil.rmtree(full_path)
         else:
             os.remove(full_path)
         
-        return jsonify({
-            'message': 'Deleted successfully'
-        })
+        return success_response(
+            message = f'{item_type.capitalize()} "{item_name}" deleted successfully'
+        )
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return error_response(str(e), 500)
 
 @app.route('/')
 def index():

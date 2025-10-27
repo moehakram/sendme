@@ -1,29 +1,31 @@
-from flask import current_app, url_for, abort
+from flask import current_app, jsonify, url_for, abort
 import os
 import argparse
 import socket
 import qrcode
 
+def get_static_dir(path: str) -> str:
+    """Get the directory where static files are located"""
+    return os.path.join(os.path.dirname(os.path.abspath(path)), 'dist')
+
 def format_size(size_bytes):
     """Convert bytes to human readable format"""
     if size_bytes == 0:
-        return "0 B"
+        return "0 KB"
     
-    size_names = ["B", "KB", "MB", "GB", "TB"]
+    size_names = ["KB", "MB", "GB"]
     i = 0
-    size = float(size_bytes)
+    size = float(size_bytes) / 1024.0  # Start from KB
     
     while size >= 1024.0 and i < len(size_names) - 1:
         size /= 1024.0
         i += 1
     
-    if i == 0:  # Bytes
-        return f"{int(size)} {size_names[i]}"
-    elif size >= 100:  # >= 100 units, no decimal
+    if size >= 100:  # >= 100 units, no decimal
         return f"{size:.0f} {size_names[i]}"
-    elif size >= 10:   # >= 10 units, 1 decimal
+    elif size >= 10:  # >= 10 units, 1 decimal
         return f"{size:.1f} {size_names[i]}"
-    else:              # < 10 units, 2 decimals
+    else:  # < 10 units, 2 decimals
         return f"{size:.2f} {size_names[i]}"
 
 def safe_join(base, *paths):
@@ -56,6 +58,19 @@ def generate_breadcrumbs(subpath):
                 })
     
     return breadcrumbs
+
+def success_response(message: str, data= None, status_code=200):
+    """Helper function for consistent success responses"""
+    response = {'message': message}
+    if data is not None:
+        response['data'] = data
+    
+    return jsonify(response), status_code
+
+def error_response(message, status_code=400):
+    """Helper function for consistent error responses"""
+    response = {'message':  message}
+    return jsonify(response), status_code
 
 def get_local_ip():
     """Get the actual local IP address by attempting to connect to an external server."""
