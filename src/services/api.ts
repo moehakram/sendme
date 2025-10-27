@@ -6,10 +6,10 @@ const API_BASE_URL = '';
 
 export async function fetchFiles(path: string = ''): Promise<FilesResponse> {
     const response = await fetch(`${API_BASE_URL}/api/files?path=${encodeURIComponent(path)}`);
-    const data = await response.json();
+    const data: FilesResponse = await response.json();
     
     if (!response.ok) {
-        throw new Error(data.error || 'Failed to load files');
+        throw new Error(data.message || 'Failed to load files');
     }
 
     return data;
@@ -25,9 +25,9 @@ export async function uploadFile(file: File, path: string): Promise<UploadRespon
         body: formData
     });
 
-    const data = await response.json();
+    const data : UploadResponse = await response.json();
     if (!response.ok) {
-        throw new Error(data.error || 'Upload failed');
+        throw new Error(data.message || 'Upload failed');
     }
 
     return data;
@@ -42,9 +42,9 @@ export async function deleteItem(path: string): Promise<DeleteResponse> {
         body: JSON.stringify({ path })
     });
 
-    const data = await response.json();
+    const data : DeleteResponse = await response.json();
     if (!response.ok) {
-        throw new Error(data.error || 'Failed to delete');
+        throw new Error(data.message || 'Failed to delete');
     }
 
     return data;
