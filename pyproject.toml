@@ -1,6 +1,6 @@
 [project]
 name = "sendme"
-version = "0.1.0"
+version = "v2.0.0"
 description = "Add your description here"
 readme = "README.md"
 authors = [
