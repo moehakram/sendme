@@ -5,7 +5,7 @@ export interface FileItem {
   path: string;
   is_directory: boolean;
   size: string;
-  modified_at: string;
+  modified_at: number;
 }
 
 export interface Breadcrumb {

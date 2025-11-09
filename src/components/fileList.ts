@@ -1,5 +1,6 @@
 // FileList Component - Fungsi untuk render daftar file dan folder
 import type { FileItem, FileListHandlers } from '../types';
+import { timeAgo } from '../utils/time-ago';
 
 export function renderFileList(
     container: HTMLElement, 
@@ -36,7 +37,7 @@ export function renderFileList(
                     </a>
                 </td>
                 <td>${sizeDisplay}</td>
-                <td>${item.modified_at}</td>
+                <td>${timeAgo(item.modified_at)}</td>
                 <td>
                     ${!item.is_directory ? `<button class="btn btn-sm download-btn" data-path="${item.path}">⬇️</button>` : ''}
                     <button class="btn btn-sm btn-danger delete-btn" data-path="${item.path}" data-name="${item.name}">🗑️</button>
