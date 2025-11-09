@@ -1,4 +1,4 @@
-.PHONY: dev dev-backend dev-frontend build setup
+.PHONY: dev dev-backend dev-frontend build setup install uninstall
 
 setup:
 	cd frontend && npm install
@@ -23,3 +23,6 @@ build:
 
 install: build
 	uv tool install .
+
+uninstall:
+	uv tool uninstall sendme
