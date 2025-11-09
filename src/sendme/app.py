@@ -1,7 +1,6 @@
 import sys
 from flask import Flask, abort, send_from_directory, request
 from werkzeug.utils import secure_filename
-from datetime import datetime
 import os
 import shutil
 from sendme.service import error_response, format_size, get_root_dir, get_static_dir, parse_arguments, print_server_info, success_response
@@ -37,7 +36,7 @@ def api_list_files():
                 'path': rel_path,
                 'is_directory': is_dir,
                 'size': format_size(stat.st_size) if not is_dir else '-',
-                'modified_at': datetime.fromtimestamp(stat.st_mtime).strftime('%Y-%m-%d %H:%M:%S')
+                'modified_at': int(stat.st_mtime)
             })
         
         # Get breadcrumb path
