@@ -1,8 +1,8 @@
 .PHONY: dev dev-backend dev-frontend build setup install uninstall
 
 setup:
+	uv sync
 	cd frontend && npm install
-
 
 dev:
 	@trap 'kill $$(jobs -p)' EXIT;\
