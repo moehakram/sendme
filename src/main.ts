@@ -1,5 +1,6 @@
 import './style.css'
 import { initApp } from './app'
+import type { Elements } from './types';
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
     <div>
@@ -49,4 +50,15 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
     </div>
 `;
 
-initApp();
+const elements : Elements = {
+        fileList: document.getElementById('file-list')!,
+        breadcrumb: document.getElementById('breadcrumb')!,
+        loading: document.getElementById('loading')!,
+        error: document.getElementById('error')!,
+        uploadModal: document.getElementById('upload-modal')!,
+        uploadList: document.getElementById('upload-list')!,
+        uploadArea: document.getElementById('upload-area')!,
+        fileInput: document.getElementById('file-input') as HTMLInputElement
+    };
+
+initApp(elements);

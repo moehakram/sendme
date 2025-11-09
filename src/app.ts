@@ -103,23 +103,14 @@ async function uploadSingleFile(file: File): Promise<void> {
 }
 
 // Initialize app
-export function initApp(): void {
+export function initApp(initialElements : Elements): void {
     // Ambil semua DOM elements
-   elements = {
-        fileList: document.getElementById('file-list')!,
-        breadcrumb: document.getElementById('breadcrumb')!,
-        loading: document.getElementById('loading')!,
-        error: document.getElementById('error')!,
-        uploadModal: document.getElementById('upload-modal')!,
-        uploadList: document.getElementById('upload-list')!,
-        uploadArea: document.getElementById('upload-area')!,
-        fileInput: document.getElementById('file-input') as HTMLInputElement
-    };
+   elements = initialElements;
 
     // Setup upload button
     const uploadBtn = document.getElementById('upload-btn');
     uploadBtn?.addEventListener('click', () => {
-        showUploadModal((elements).uploadModal);
+        showUploadModal(elements.uploadModal);
     });
 
     // Setup modal close buttons
