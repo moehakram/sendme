@@ -20,3 +20,6 @@ build:
 	cd frontend && npm run build
 	find src/sendme/dist -mindepth 1 -not -name '.gitignore' -delete
 	cp -r frontend/dist/* src/sendme/dist/
+
+install: build
+	uv tool install .
