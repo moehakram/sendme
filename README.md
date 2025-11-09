@@ -1,140 +1,51 @@
-# SendMe - Flask File Explorer
 
-**SendMe** adalah aplikasi web file manager berbasis Flask yang memungkinkan Anda untuk mengelola file dan folder melalui antarmuka web yang intuitif. Aplikasi ini sangat berguna untuk berbagi file di jaringan lokal atau mengelola file secara remote.
+Simple file server + web file explorer to quickly share & manage files/folders on your local network.
 
+## Features
+- Browse folders with breadcrumb
+- Multi-file upload (auto-rename on duplicates)
+- Download, delete, and rename files/folders
+- QR code for easy mobile access
 
-## Fitur Utama
-
-- **📁 File Browser**: Navigasi folder dengan breadcrumb navigation
-- **📤 Upload Multi-file**: Upload beberapa file sekaligus
-- **📂 Manajemen Folder**: Buat, hapus, dan rename folder
-- **📄 Manajemen File**: View, download, hapus, dan rename file
-- **🌐 Cross-platform**: Berjalan di Windows, Linux, dan macOS
-
-## Instalasi
-
-### Download or clone the repository
+## Quick Start
 ```bash
 git clone https://github.com/moehakram/sendme.git
-
+cd sendme
+make setup        # uv sync + install frontend deps
+make dev          # run backend (8080) + frontend (Vite) in parallel
 ```
 
-### Instalasi Dependencies
+Backend only:
 ```bash
-pip install -r requirements.txt 
+uv sync
+sendme            # default port 8000
+sendme -p 8080    # match the frontend proxy when developing
 ```
 
-#### Usage
-
+Custom example:
 ```bash
-# Default: current directory, port 8080
-python sendme.py
-
-# Custom root directory
-python sendme.py /home/user/documents
-
-# Custom port
-python sendme.py -p 3000
-
-# Custom root directory and port
-python sendme.py /var/www -p 5000
-
-# Show QR code
-python sendme.py --qr
-
-# Show help
-python sendme.py --help
+sendme /path/to/dir -p 9000 --qr --debug
 ```
 
-### Akses Web Interface
+Open: http://localhost:8000 (default) or http://localhost:8080 when using the combined dev mode.
 
-Setelah menjalankan aplikasi, buka browser dan akses:
-- **Local**: `http://localhost:8080`
-
-Untuk mengakses dari perangkat lain, pastikan semua perangkat berada dalam segmen jaringan yang sama (misalnya menggunakan hotspot atau Wi-Fi yang sama):
-- **Network**: Gunakan IP yang ditampilkan di terminal
-- **Mobile**: Scan QR code yang ditampilkan
-
-## Screenshot
-
-<div style="display: flex; gap: 10px;">
-  <img src="docs/image.png" alt="Screenshot">
-  <img src="docs/by-phone.jpg" alt="Screenshot by phone" width="40%">
-</div>
-
-## 🎯 Fitur Web Interface
-
-### 1. File Browser
-- **Navigasi Folder**: Klik folder untuk masuk
-- **Breadcrumb**: Navigasi cepat ke parent directory
-- **File Preview**: Klik file untuk preview/view
-- **Sorting**: Folder ditampilkan terlebih dahulu, lalu file (alfabetis)
-
-### 2. Upload File
-- **Multi-file Upload**: Pilih beberapa file sekaligus
-- **Progress Bar**: Real-time upload progress
-- **File Info**: Tampilan jumlah file dan total size
-- **Duplicate Handling**: Otomatis rename jika file sudah ada
-
-### 3. Manajemen Folder
-- **Buat Folder**: Input nama folder baru
-- **Hapus Folder**: Konfirmasi sebelum menghapus
-- **Rename Folder**: Edit nama folder inline
-
-### 4. Manajemen File
-- **View File**: Preview file di browser
-- **Download File**: Download dengan nama original
-- **Hapus File**: Konfirmasi sebelum menghapus
-- **Rename File**: Edit nama file inline
-
-## 📝 Use Cases
-
-### Development
-- **Local Development**: Share files antar tim developer
-- **Testing**: Upload test files dengan mudah
-- **Asset Management**: Manage project assets
-
-### Production
-- **File Sharing**: Share files di jaringan internal
-- **Document Management**: Simple document repository
-- **Media Server**: Basic media file serving
-
-### Personal
-- **Home Network**: Share files antar devices
-- **Mobile Access**: Access files dari smartphone
-- **Backup Management**: Simple backup file browser
-
-## 🔍 Troubleshooting
-
-### Common Issues
-
-#### Port Already in Use
+## Frontend Dev
 ```bash
-# Gunakan port lain
-python sendme.py -p 8081
+cd frontend
+npm install
+npm run dev      # proxies /api/ -> http://localhost:8080
 ```
-
-#### Permission Denied
+Production build:
 ```bash
-# Pastikan directory dapat diakses
-chmod 755 /path/to/directory
-python sendme.py /path/to/directory
+make build       # builds and copies to src/sendme/dist
 ```
 
-#### QR Code Error
+## CLI install (global via uv tool)
 ```bash
-# Install qrcode dependencies
-pip install qrcode[pil]
+make install
+sendme --help
+make uninstall
 ```
 
-### Debug Mode
-```bash
-# Enable debug untuk troubleshooting
-python sendme.py --debug
-```
-
-## 📄 License
-
-Project ini adalah open source. Silakan digunakan dan dimodifikasi sesuai kebutuhan.
-
-**SendMe** - Simple, Secure, dan User-friendly File Explorer untuk kebutuhan sharing dan management file Anda.
+## License
+Open source. Use and modify freely.
