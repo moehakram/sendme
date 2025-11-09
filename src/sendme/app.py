@@ -1,6 +1,5 @@
 import sys
 from flask import Flask, abort, send_from_directory, request
-# from flask_cors import CORS
 from werkzeug.utils import secure_filename
 from datetime import datetime
 import os
@@ -9,7 +8,6 @@ from sendme.service import error_response, format_size, get_root_dir, get_static
 
 # Create Flask app
 app = Flask(__name__, static_folder=get_static_dir(__file__), static_url_path='')
-# CORS(app)
 
 @app.route('/api/files')
 def api_list_files():
