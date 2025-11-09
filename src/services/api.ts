@@ -1,11 +1,8 @@
 // API Service - Fungsi-fungsi untuk komunikasi dengan server
 import type { FilesResponse, UploadResponse, DeleteResponse, FileData } from '../types';
 
-const API_BASE_URL = '';
-// const API_BASE_URL = 'http://127.0.0.1:8000';
-
 export async function fetchFiles(path: string = ''): Promise<FileData> {
-    const response = await fetch(`${API_BASE_URL}/api/files?path=${encodeURIComponent(path)}`);
+    const response = await fetch(`/api/files?path=${encodeURIComponent(path)}`);
     const data: FilesResponse = await response.json();
     
     if (!response.ok) {
@@ -20,7 +17,7 @@ export async function uploadFile(file: File, path: string): Promise<UploadRespon
     formData.append('file', file);
     formData.append('path', path);
 
-    const response = await fetch(`${API_BASE_URL}/api/upload`, {
+    const response = await fetch(`/api/upload`, {
         method: 'POST',
         body: formData
     });
@@ -34,7 +31,7 @@ export async function uploadFile(file: File, path: string): Promise<UploadRespon
 }
 
 export async function deleteItem(path: string): Promise<DeleteResponse> {
-    const response = await fetch(`${API_BASE_URL}/api/delete`, {
+    const response = await fetch(`/api/delete`, {
         method: 'DELETE',
         headers: { 
             'Content-Type': 'application/json' 
@@ -51,5 +48,5 @@ export async function deleteItem(path: string): Promise<DeleteResponse> {
 }
 
 export function getDownloadUrl(path: string): string {
-    return `${API_BASE_URL}/api/download?path=${encodeURIComponent(path)}`;
+    return `/api/download?path=${encodeURIComponent(path)}`;
 }
