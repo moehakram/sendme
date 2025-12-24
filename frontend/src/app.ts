@@ -1,132 +1,204 @@
-// Main App - Functional approach untuk file server
+import { computed, effect, reactive } from '@vue/reactivity';
+import type { Elements, FileItem } from './types';
+import { createFileService, UnauthorizedException } from './api';
+import { handleTableClick } from './ui/handleTableClick';
+import { authState, clearAuth, setToken } from './services/useAuth';
+import { useNotify } from './services/useNotify';
+import { useProgress } from './services/useProgress';
+import { setupAllListeners } from './ui/setup-listeners';
+import {
+  renderBreadcrumb,
+  renderProgress,
+  renderStatus,
+  renderTable,
+} from './ui/renderers';
 
-import { fetchFiles, uploadFile, deleteItem, getDownloadUrl } from './services/api';
-import { renderFileList } from './components/fileList';
-import { renderBreadcrumb } from './components/breadcrumb';
-import { 
-    initUploadModal, 
-    showUploadModal, 
-    hideUploadModal, 
-    addUploadItem, 
-    updateUploadStatus,
-    clearUploadList 
-} from './components/uploadModal';
-import { showLoading, hideLoading, showError, showSuccess } from './utils/ui';
-import type { Elements } from './types';
+const filesState = reactive<{
+  path: string;
+  items: FileItem[];
+}>({
+  path: '',
+  items: [],
+});
 
+const { notify, uiState } = useNotify();
+const { progress, clearProgress, setProgress, updatePercent, _patchProgress } =
+  useProgress(notify);
 
-let currentPath: string = '';
+const fileService = createFileService();
 
-// DOM elements
-let elements = {} as Elements;
+// 1. Cek apakah ada file di folder saat ini
+const hasFiles = computed(() => filesState.items.length > 0);
 
-// Load files dari server
-export async function loadFiles(path: string = ''): Promise<void> {
-    currentPath = path;
-    showLoading(elements);
-    
-    try {
-        const data = await fetchFiles(path);
-        
-        // Render breadcrumb
-        renderBreadcrumb((elements).breadcrumb, data.breadcrumbs, loadFiles);
-        
-        // Render file list
-        renderFileList((elements).fileList, data.entries, {
-            onItemClick: (path: string, isDir: boolean) => {
-                if (isDir) {
-                    loadFiles(path);
-                } else {
-                    downloadFile(path);
-                }
-            },
-            onDownload: downloadFile,
-            onDelete: handleDelete
-        });
-        
-        hideLoading(elements);
-    } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-        showError(elements, errorMessage);
-    }
-}
+// 2. Cek apakah harus menampilkan tabel
+const shouldShowTable = computed(() => !uiState.loading && hasFiles.value);
 
-// Download file
-function downloadFile(path: string): void {
-    window.location.href = getDownloadUrl(path);
-}
+// 3. Cek apakah folder benar-benar kosong (bukan loading, bukan error, dan tidak ada file)
+const shouldShowEmpty = computed(
+  () => !uiState.loading && !hasFiles.value && !uiState.error,
+);
 
-// Delete item (file atau folder)
-async function handleDelete(path: string, name: string): Promise<void> {
-    if (!confirm(`Are you sure you want to delete "${name}"?`)) {
-        return;
-    }
+// 4. Proses path menjadi bagian-bagian breadcrumb
+const breadcrumbParts = computed(() =>
+  filesState.path.split('/').filter(Boolean),
+);
 
-    try {
-        const data = await deleteItem(path);
-        showSuccess(data.message || 'Item deleted successfully');
-        loadFiles(currentPath);
-    } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-        showError(elements, errorMessage);
-    }
-}
+const handleAuthError = (e: any) => {
+  if (e instanceof UnauthorizedException) {
+    clearAuth();
+  } else {
+    notify(e.message || 'Ada error!');
+  }
+};
 
-// Handle upload files
-async function handleUpload(files: FileList): Promise<void> {
-    clearUploadList((elements).uploadList);
+const fetchFiles = async (path = '') => {
+  if (uiState.loading) return;
+  uiState.loading = true;
+  try {
+    const data = await fileService.load(path);
+    filesState.items = data.items;
+    filesState.path = data.path;
+    authState.needsAuth = false;
+  } catch (e) {
+    handleAuthError(e);
+  } finally {
+    uiState.loading = false;
+  }
+};
 
-    for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        if (file) {
-            await uploadSingleFile(file);
-        }
-    }
+const handlePreview = async (path: string) => {
+  uiState.loading = true;
+  try {
+    const previewUrl = await fileService.preview(path);
+    window.open(previewUrl, '_blank');
+  } catch (e) {
+    handleAuthError(e);
+  } finally {
+    uiState.loading = false;
+  }
+};
 
-    setTimeout(() => {
-        hideUploadModal((elements).uploadModal);
-        loadFiles(currentPath);
-    }, 1000);
-}
+const handleDownload = async (file: FileItem) => {
+  const isOk = setProgress({
+    percent: 0,
+    label: `Menyiapkan unduhan: ${file.name}`,
+    cancelAction: () => {},
+  });
 
-// Upload single file
-async function uploadSingleFile(file: File): Promise<void> {
-    const item = addUploadItem((elements).uploadList, file.name);
+  if (!isOk) return;
 
-    try {
-        await uploadFile(file, currentPath);
-        updateUploadStatus(item, true);
-    } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Upload failed';
-        updateUploadStatus(item, false, errorMessage);
-    }
-}
+  try {
+    const { promise, abort } = fileService.download(file, updatePercent);
 
-// Initialize app
-export function initApp(initialElements : Elements): void {
-    // Ambil semua DOM elements
-   elements = initialElements;
-
-    // Setup upload button
-    const uploadBtn = document.getElementById('upload-btn');
-    uploadBtn?.addEventListener('click', () => {
-        showUploadModal(elements.uploadModal);
+    _patchProgress({
+      cancelAction: () => abort(new Error('Unduhan dibatalkan')),
     });
 
-    // Setup modal close buttons
-    document.querySelectorAll('.modal-close').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const target = e.target as HTMLElement;
-            const modal = target.closest('.modal') as HTMLElement;
-            if (modal) {
-                modal.style.display = 'none';
-            }
-        });
+    await promise;
+  } catch (e: any) {
+    handleAuthError(e);
+  } finally {
+    clearProgress();
+  }
+};
+
+const handleUpload = async (files: FileList) => {
+  if (!files.length) return;
+  const isOk = setProgress({
+    percent: 0,
+    label: 'Mengunggah berkas...',
+    cancelAction: () => {},
+  });
+
+  if (!isOk) return; // Berhenti jika masih sibuk
+
+  try {
+    const { promise, abort } = fileService.upload(
+      files,
+      filesState.path,
+      updatePercent,
+    );
+
+    _patchProgress({ cancelAction: abort });
+
+    await promise;
+    await fetchFiles(filesState.path);
+  } catch (e) {
+    handleAuthError(e);
+  } finally {
+    clearProgress();
+  }
+};
+
+const handleDelete = async (path: string, name: string) => {
+  if (!confirm(`Hapus "${name}"?`)) return;
+
+  uiState.loading = true;
+  try {
+    const success = await fileService.delete(path);
+    if (success) await fetchFiles(filesState.path);
+  } catch (e) {
+    handleAuthError(e);
+  } finally {
+    uiState.loading = false;
+  }
+};
+
+export const initApp = (elements: Elements): void => {
+  // --- 1. EFFECTS: Injeksi State ke Renderer ---
+
+  // Tabel File (Hanya injeksi items)
+  effect(() => renderTable(elements.fileList, filesState.items));
+
+  // Breadcrumb (Hanya injeksi path)
+  effect(() =>
+    renderBreadcrumb(elements.breadcrumb, breadcrumbParts.value, fetchFiles),
+  );
+
+  // Progress (Injeksi objek data mentah/null)
+  effect(() => renderProgress(elements, progress.value));
+
+  // Status (Injeksi nilai primitif spesifik)
+  effect(() =>
+    renderStatus(
+      elements,
+      uiState.loading,
+      uiState.error,
+      shouldShowTable.value,
+      shouldShowEmpty.value,
+    ),
+  );
+
+  // Auth Overlay
+  effect(() => {
+    elements.authOverlay.classList.toggle('hidden', !authState.needsAuth);
+  });
+
+  // Modal Auto-Close (Side Effect)
+  effect(() => {
+    if (progress.value !== null) elements.uploadModal.classList.add('hidden');
+  });
+
+  // --- 2. LISTENERS ---
+  setupAllListeners({
+    elements,
+    onAuth: token => {
+      setToken(token);
+      fetchFiles(filesState.path);
+    },
+    onUpload: handleUpload,
+    onCancel: () => progress.value?.cancelAction(),
+    onReset: () => fetchFiles(''),
+  });
+
+  elements.fileList.onclick = e =>
+    handleTableClick(e, {
+      downloadFn: handleDownload,
+      deleteFn: file => handleDelete(file.path, file.name),
+      openFn: file =>
+        file.is_dir ? fetchFiles(file.path) : handlePreview(file.path),
     });
 
-    // Initialize upload modal
-    initUploadModal(elements, handleUpload);
-
-    // Load initial data
-    loadFiles();
-}
+  // --- 3. START ---
+  fetchFiles();
+};
