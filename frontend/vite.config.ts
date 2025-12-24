@@ -1,12 +1,15 @@
-import { defineConfig } from "vite";
+import tailwindcss from '@tailwindcss/vite';
+import { defineConfig } from 'vite';
 
 export default defineConfig({
-    server: {
-        proxy: {
-            '/api/' : {
-                target: 'http://localhost:8080',
-                changeOrigin: true
-            }
-        }
-    }
+  server: {
+    proxy: {
+      '/sendme/': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
+    },
+    open: true,
+  },
+  plugins: [tailwindcss()],
 });

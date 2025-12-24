@@ -11,5 +11,10 @@
   "devDependencies": {
     "typescript": "^5.9.3",
     "vite": "^7.1.7"
+  },
+  "dependencies": {
+    "@tailwindcss/vite": "^4.1.18",
+    "@vue/reactivity": "^3.5.26",
+    "tailwindcss": "^4.1.18"
   }
 }
