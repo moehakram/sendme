@@ -1,0 +1,31 @@
+meta {
+  name: get
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{base_url}}/files?path=projek
+  body: none
+  auth: none
+}
+
+params:query {
+  path: projek
+  ~preview: true
+  ~recursive: true
+}
+
+headers {
+  Accept: application/json
+  x-token: {{token}}
+}
+
+body:file {
+  file: @file(/home/akram/projects/sendme-worktree/README.md) @contentType(text/markdown; charset=utf-8)
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

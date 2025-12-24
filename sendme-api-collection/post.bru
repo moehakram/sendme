@@ -1,0 +1,28 @@
+meta {
+  name: post
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{base_url}}/files/Desktop
+  body: multipartForm
+  auth: none
+}
+
+headers {
+  x-token: {{token}}
+}
+
+body:multipart-form {
+  uploaded_file: @file(/home/akram/projects/sendme-worktree/Makefile)
+}
+
+body:file {
+  file: @file(/home/akram/projects/sendme-worktree/README.md) @contentType(text/markdown; charset=utf-8)
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
