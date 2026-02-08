@@ -37,3 +37,10 @@ export function timeAgo(timestamp: number): string {
     return rtf.format(-Math.floor(secondAgo / YEAR), 'year');
   }
 }
+export const getPathFromURL = (prefix: string = '/tree'): string => {
+  const pathname = window.location.pathname;
+  const rawPath = pathname.startsWith(prefix)
+    ? pathname.slice(prefix.length)
+    : pathname;
+  return decodeURIComponent(rawPath).replace(/(^\/+|\/+$)/g, '') || '';
+};

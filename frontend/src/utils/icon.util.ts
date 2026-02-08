@@ -3,6 +3,7 @@ export const getFileEmoji = (mimeType: string | null): string => {
 
   // 1. Pemetaan Spesifik (Priority)
   const emojiMap: Record<string, string> = {
+    folder: '📁',
     // PDF
     'application/pdf': '📕',
 
