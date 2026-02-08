@@ -1,204 +1,206 @@
-import { computed, effect, reactive } from '@vue/reactivity';
-import type { Elements, FileItem } from './types';
-import { createFileService, UnauthorizedException } from './api';
-import { handleTableClick } from './ui/handleTableClick';
-import { authState, clearAuth, setToken } from './services/useAuth';
-import { useNotify } from './services/useNotify';
-import { useProgress } from './services/useProgress';
-import { setupAllListeners } from './ui/setup-listeners';
+import { computed, effect, reactive, ref, watch } from '@vue/reactivity';
+import type { GlobalElements } from './types';
+import { useProgress } from './composables/use-progress';
 import {
+  setupAllListeners,
   renderBreadcrumb,
   renderProgress,
-  renderStatus,
   renderTable,
-} from './ui/renderers';
+  handleTableClick,
+} from './components/file-manager';
+import { notify } from './utils/dom.util';
+import { getPathFromURL } from './utils/format.util';
+import { useFileStore } from './composables/use-files';
+import { render404, renderLocked } from './components/error';
 
-const filesState = reactive<{
-  path: string;
-  items: FileItem[];
-}>({
-  path: '',
-  items: [],
-});
-
-const { notify, uiState } = useNotify();
-const { progress, clearProgress, setProgress, updatePercent, _patchProgress } =
-  useProgress(notify);
-
-const fileService = createFileService();
-
-// 1. Cek apakah ada file di folder saat ini
-const hasFiles = computed(() => filesState.items.length > 0);
-
-// 2. Cek apakah harus menampilkan tabel
-const shouldShowTable = computed(() => !uiState.loading && hasFiles.value);
-
-// 3. Cek apakah folder benar-benar kosong (bukan loading, bukan error, dan tidak ada file)
-const shouldShowEmpty = computed(
-  () => !uiState.loading && !hasFiles.value && !uiState.error,
-);
-
-// 4. Proses path menjadi bagian-bagian breadcrumb
-const breadcrumbParts = computed(() =>
-  filesState.path.split('/').filter(Boolean),
-);
-
-const handleAuthError = (e: any) => {
-  if (e instanceof UnauthorizedException) {
-    clearAuth();
-  } else {
-    notify(e.message || 'Ada error!');
-  }
-};
-
-const fetchFiles = async (path = '') => {
-  if (uiState.loading) return;
-  uiState.loading = true;
-  try {
-    const data = await fileService.load(path);
-    filesState.items = data.items;
-    filesState.path = data.path;
-    authState.needsAuth = false;
-  } catch (e) {
-    handleAuthError(e);
-  } finally {
-    uiState.loading = false;
-  }
-};
-
-const handlePreview = async (path: string) => {
-  uiState.loading = true;
-  try {
-    const previewUrl = await fileService.preview(path);
-    window.open(previewUrl, '_blank');
-  } catch (e) {
-    handleAuthError(e);
-  } finally {
-    uiState.loading = false;
-  }
-};
-
-const handleDownload = async (file: FileItem) => {
-  const isOk = setProgress({
-    percent: 0,
-    label: `Menyiapkan unduhan: ${file.name}`,
-    cancelAction: () => {},
+export function initApp(elements: GlobalElements): void {
+  // --- 1. SETUP SERVICES & STORE ---
+  const { filesState, actions } = useFileStore();
+  const progress = useProgress();
+  const uiState = reactive({
+    error: 0,
+    loading: false,
   });
+  const currentPath = ref(getPathFromURL());
+  const refreshTicket = ref(0);
+  const triggerRefresh = () => refreshTicket.value++;
+  // --- 2. COMPUTED STATE ---
+  const breadcrumbParts = computed(() =>
+    currentPath.value === ''
+      ? []
+      : currentPath.value.split('/').filter(Boolean),
+  );
 
-  if (!isOk) return;
+  // Menentukan template mana yang harus aktif berdasarkan state
+  // --- 3. NAVIGATION ---
+  const navigateTo = (newPath: string) => {
+    const cleanPath = newPath.replace(/(^\/+|\/+$)/g, '');
+    const encoded = cleanPath
+      .split('/')
+      .filter(Boolean)
+      .map(encodeURIComponent)
+      .join('/');
+    const targetUrl = `/tree/${encoded}`;
 
-  try {
-    const { promise, abort } = fileService.download(file, updatePercent);
+    if (window.location.pathname !== targetUrl) {
+      window.history.pushState(null, '', targetUrl);
+      currentPath.value = getPathFromURL();
+    }
+  };
 
-    _patchProgress({
-      cancelAction: () => abort(new Error('Unduhan dibatalkan')),
+  window.onpopstate = () => {
+    currentPath.value = getPathFromURL();
+    filesState.items = null; // Memicu loading/empty state saat navigasi browser
+  };
+
+  // --- 4. ACTION HANDLERS ---
+  const handleUpload = async (files: FileList) => {
+    if (uiState.error === 401) return triggerRefresh();
+    if (!files.length || progress.isActive) {
+      return notify(
+        `Proses "${progress.data.value?.label}" sedang berjalan`,
+        'info',
+      );
+    }
+    const controller = new AbortController();
+    progress.show({
+      percent: 0,
+      label: 'Mengunggah file...',
+      abortHook: () => controller.abort(new Error('Upload dibatalkan')),
     });
+    try {
+      const res = await actions.upload(
+        files,
+        progress.update,
+        controller.signal,
+      );
 
-    await promise;
-  } catch (e: any) {
-    handleAuthError(e);
-  } finally {
-    clearProgress();
-  }
-};
+      notify(res.message, 'success');
+      triggerRefresh();
+    } catch (e: any) {
+      uiState.error = e.status;
+      notify(e.message || 'Upload gagal', 'error');
+    } finally {
+      progress.clear();
+    }
+  };
 
-const handleUpload = async (files: FileList) => {
-  if (!files.length) return;
-  const isOk = setProgress({
-    percent: 0,
-    label: 'Mengunggah berkas...',
-    cancelAction: () => {},
+  const handleDelete = async (file: { href: string; name: string }) => {
+    if (!confirm(`Hapus ${file.name}?`)) return;
+    try {
+      await actions.delete(file.href);
+      notify(`File ${file.name} deleted successfully.`, 'success');
+      triggerRefresh();
+    } catch (e: any) {
+      uiState.error = e.status;
+      notify(e.message || 'Gagal menghapus', 'error');
+    }
+  };
+
+  const handleDownload = async (file: { href: string; name: string }) => {
+    try {
+      await actions.download(file);
+    } catch (e: any) {
+      uiState.error = e.status;
+      notify(e.message || 'Error Unduhan', 'error');
+    } finally {
+      progress.clear();
+    }
+  };
+
+  // --- 5. EFFECTS (The Engine) ---
+  // Simpan ini sebagai referensi request terbaru
+  let activeController: AbortController | null = null;
+
+  watch(
+    [currentPath, refreshTicket],
+    async ([newPath], _, onCleanup) => {
+      const controller = new AbortController();
+      activeController = controller; // Tandai ini sebagai request "paling baru"
+
+      onCleanup(() => {
+        controller.abort();
+      });
+
+      uiState.loading = true;
+
+      try {
+        await actions.load(newPath as string, controller.signal);
+
+        // Guard: Jangan update error jika sudah ada request baru yang menimpa
+        if (controller === activeController) {
+          uiState.error = 0;
+        }
+      } catch (e: any) {
+        if (e.name === 'AbortError') return;
+
+        // Guard: Jangan tampilkan notifikasi error dari request yang sudah usang
+        if (controller === activeController) {
+          uiState.error = e.status;
+          notify(e.message || 'Gagal!', 'error');
+        }
+      } finally {
+        // Jangan matikan loading jika request terbaru masih berjalan.
+        if (controller === activeController) {
+          uiState.loading = false;
+        }
+      }
+    },
+    { immediate: true },
+  );
+  // B. Control Overlays (Loading & Error)
+  effect(() => {
+    elements.loading.classList.toggle('hidden', !uiState.loading);
   });
 
-  if (!isOk) return; // Berhenti jika masih sibuk
-
-  try {
-    const { promise, abort } = fileService.upload(
-      files,
-      filesState.path,
-      updatePercent,
-    );
-
-    _patchProgress({ cancelAction: abort });
-
-    await promise;
-    await fetchFiles(filesState.path);
-  } catch (e) {
-    handleAuthError(e);
-  } finally {
-    clearProgress();
-  }
-};
-
-const handleDelete = async (path: string, name: string) => {
-  if (!confirm(`Hapus "${name}"?`)) return;
-
-  uiState.loading = true;
-  try {
-    const success = await fileService.delete(path);
-    if (success) await fetchFiles(filesState.path);
-  } catch (e) {
-    handleAuthError(e);
-  } finally {
-    uiState.loading = false;
-  }
-};
-
-export const initApp = (elements: Elements): void => {
-  // --- 1. EFFECTS: Injeksi State ke Renderer ---
-
-  // Tabel File (Hanya injeksi items)
-  effect(() => renderTable(elements.fileList, filesState.items));
-
-  // Breadcrumb (Hanya injeksi path)
-  effect(() =>
-    renderBreadcrumb(elements.breadcrumb, breadcrumbParts.value, fetchFiles),
+  watch(
+    () => uiState.error,
+    error => {
+      if (error === 401) {
+        renderLocked(elements);
+      } else if (error === 404) {
+        render404(elements, () => navigateTo(''));
+      }
+    },
   );
 
-  // Progress (Injeksi objek data mentah/null)
-  effect(() => renderProgress(elements, progress.value));
+  effect(() => {
+    const file = filesState.items;
+    if (file) {
+      renderTable(elements, file);
+    }
+  });
 
-  // Status (Injeksi nilai primitif spesifik)
-  effect(() =>
-    renderStatus(
-      elements,
-      uiState.loading,
-      uiState.error,
-      shouldShowTable.value,
-      shouldShowEmpty.value,
-    ),
+  // E. Breadcrumb & Progress
+  watch(
+    breadcrumbParts,
+    parts => {
+      renderBreadcrumb(
+        elements,
+        parts,
+        idx => navigateTo(parts.slice(0, idx + 1).join('/')),
+        () => navigateTo(''),
+      );
+    },
+    { immediate: true },
   );
 
-  // Auth Overlay
-  effect(() => {
-    elements.authOverlay.classList.toggle('hidden', !authState.needsAuth);
-  });
+  effect(() => renderProgress(elements, progress.data.value));
 
-  // Modal Auto-Close (Side Effect)
-  effect(() => {
-    if (progress.value !== null) elements.uploadModal.classList.add('hidden');
-  });
-
-  // --- 2. LISTENERS ---
   setupAllListeners({
     elements,
-    onAuth: token => {
-      setToken(token);
-      fetchFiles(filesState.path);
-    },
     onUpload: handleUpload,
-    onCancel: () => progress.value?.cancelAction(),
-    onReset: () => fetchFiles(''),
+    onCancel: progress.onAbort,
+    onReset: triggerRefresh,
   });
 
-  elements.fileList.onclick = e =>
+  // Event Delegation pada Viewport
+  elements.mainViewport.onclick = e => {
     handleTableClick(e, {
-      downloadFn: handleDownload,
-      deleteFn: file => handleDelete(file.path, file.name),
-      openFn: file =>
-        file.is_dir ? fetchFiles(file.path) : handlePreview(file.path),
+      onDownload: handleDownload,
+      onDelete: handleDelete,
+      onNavigate: f => navigateTo(f.path),
+      onPreview: f => window.open(f.href, '_blank'),
     });
-
-  // --- 3. START ---
-  fetchFiles();
-};
+  };
+}
