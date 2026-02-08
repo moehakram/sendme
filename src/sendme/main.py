@@ -4,7 +4,7 @@ import uvicorn
 
 from .app import create_app
 from .config import config, setup_logging
-from .utils import valid_directory, get_ip_address, generate_qr_code
+from .utils import valid_directory, get_ip_address, generate_qr_code, validate_auth
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +19,10 @@ def parse_arguments():
         help="Directory to serve (default: current directory)",
     )
     parser.add_argument(
-        "-t", "--token", help="Enable authectentication using 'x-token' header"
+        "-a",
+        "--auth",
+        help="Enable authentication. Format: 'username:password'",
+        type=validate_auth,
     )
     parser.add_argument(
         "-p",
@@ -36,6 +39,13 @@ def parse_arguments():
     )
     parser.add_argument(
         "--qr", action="store_true", help="Generate QR code for easy access"
+    )
+    parser.add_argument(
+        "-d",
+        "--allow-delete",
+        action="store_true",
+        help="Allow delete operations",
+        default=False,
     )
     return parser.parse_args()
 
@@ -61,10 +71,11 @@ def cli():
     args = parse_arguments()
 
     config.BASE_DIR = args.directory
-    config.ACCESS_TOKEN = args.token
+    config.AUTH_CREDENTIALS = args.auth
     config.PORT = args.port
     config.HOST = args.host
     config.SHOW_QR = args.qr
+    config.ALLOW_DELETE = args.allow_delete
 
     setup_logging()
     print_server_info()
