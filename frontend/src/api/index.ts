@@ -1,3 +1,3 @@
 export * from './client';
 export * from './exception';
-export * from './files';
+export * from './files.api';
