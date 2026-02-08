@@ -5,7 +5,7 @@ meta {
 }
 
 post {
-  url: {{base_url}}/files/Desktop
+  url: {{base_url}}/tree/.
   body: multipartForm
   auth: none
 }
@@ -15,7 +15,7 @@ headers {
 }
 
 body:multipart-form {
-  uploaded_file: @file(/home/akram/projects/sendme-worktree/Makefile)
+  files: @file(/home/akram/Documents/tugas-EER-241117_MUH.AKRAM.pdf)
 }
 
 body:file {
