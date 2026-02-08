@@ -43,3 +43,22 @@ def valid_directory(path: str) -> Path:
     #     raise argparse.ArgumentTypeError(f"Directory '{path}' is not writable")
 
     return p
+
+
+def validate_auth(value: str):
+    """Validate username:password format."""
+    if not value or not value.strip():
+        return None
+
+    stripped = value.strip()
+
+    # Check basic format
+    parts = stripped.split(":", 1)
+    if len(parts) != 2:
+        raise argparse.ArgumentTypeError("Must be in 'username:password' format")
+
+    username, password = parts
+    if not username or not password:
+        raise argparse.ArgumentTypeError("Both username and password are required")
+
+    return stripped
