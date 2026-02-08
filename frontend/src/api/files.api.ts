@@ -1,70 +1,43 @@
-import { client, API_PREFIX, buildUrl } from './client';
+import type { FileItemsResponse } from '../types';
+import { triggerFileDownload } from '../utils/dom.util';
+import { client } from './client';
+import { ApiException } from './exception';
 
-export const createFileService = () => {
-  return {
-    load(path: string) {
-      return client.get<any>(`${API_PREFIX}/files`, {
-        params: { path },
-      });
-    },
+function get(url: string, signal?: AbortSignal) {
+  return client.get<FileItemsResponse>(url, 'GET', signal);
+}
 
-    delete(path: string) {
-      return client.get(`${API_PREFIX}/files`, {
-        method: 'DELETE',
-        params: { path },
-      });
-    },
+function remove(url: string) {
+  return client.get(url, 'DELETE');
+}
 
-    upload(
-      files: FileList,
-      paramPath: string,
-      onProgress: (p: number) => void,
-    ) {
-      return client.upload(
-        buildUrl(`${API_PREFIX}/files`, { path: paramPath }),
-        files,
-        onProgress,
-      );
-    },
+function upload(
+  url: string,
+  files: FileList,
+  onProgress: (persent: number) => void,
+  signal?: AbortSignal,
+) {
+  return client.upload<{ message: string }>(url, files, onProgress, signal);
+}
 
-    download(
-      file: { path: string; name: string },
-      onProgress: (p: number) => void,
-    ) {
-      const { promise, abort } = client.download(
-        buildUrl(`${API_PREFIX}/file`, { path: file.path }),
-        onProgress,
-      );
+async function download(url: string, fileName: string) {
+  // Pre-flight check
+  const check = await fetch(url, {
+    method: 'HEAD',
+    credentials: 'include',
+  });
 
-      const wrappedPromise = (async () => {
-        const blob = await promise;
+  if (!check.ok) {
+    // Jika HEAD gagal, baru lakukan GET untuk ambil pesan error JSON
+    const errorRes = await fetch(fileName, { credentials: 'include' });
+    const errorData = await errorRes.json();
+    throw new ApiException(
+      errorData.message || 'Failed to download file',
+      errorRes.status,
+    );
+  }
+  // Eksekusi Download Native
+  triggerFileDownload(url, fileName);
+}
 
-        // Proses download di browser
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = file.name;
-        document.body.appendChild(a);
-        a.click();
-
-        // Cleanup
-        window.URL.revokeObjectURL(url);
-        a.remove();
-      })();
-
-      return {
-        promise: wrappedPromise,
-        abort,
-      };
-    },
-
-    async preview(path: string): Promise<string> {
-      // const token = getAuthToken().token;
-      return buildUrl(`${API_PREFIX}/file`, {
-        path,
-        preview: 'true',
-        // ...(token ? { token } : {}),
-      });
-    },
-  };
-};
+export const apiFiles = { get, download, upload, remove };
