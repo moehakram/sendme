@@ -12,8 +12,9 @@ dev:
 	"$(MAKE) dev-frontend" \
 	--kill-others
 
+	# uv run sendme --port 8080 .
 dev-backend:
-	uv run sendme --port 8080 .
+	uv run uvicorn sendme.app:create_app --factory --reload --port 8080
 
 dev-frontend:
 	cd frontend && npm run dev
