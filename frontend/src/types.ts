@@ -1,43 +1,88 @@
-export interface Elements {
-  fileList: HTMLTableSectionElement;
-  breadcrumb: HTMLElement;
+export interface GlobalElements {
+  mainViewport: HTMLElement;
   loading: HTMLElement;
-  error: HTMLElement;
+  notificationArea: HTMLElement;
+  uploadBtn: HTMLButtonElement;
+  breadcrumb: HTMLElement;
+
+  // Progress UI
+  progressContainer: HTMLElement;
+  progressBar: HTMLElement;
+  progressLabel: HTMLElement;
+  progressText: HTMLElement;
+  cancelProgress: HTMLButtonElement;
+
+  // Modal
   uploadModal: HTMLElement;
-  uploadBtn: HTMLElement;
-  fileInput: HTMLInputElement;
   uploadArea: HTMLElement;
-  emptyState: HTMLElement;
-  table: HTMLTableElement;
-  progContainer: HTMLElement;
-  progBar: HTMLElement;
-  progLabel: HTMLElement;
-  progText: HTMLElement;
-  cancelBtn: HTMLElement;
-  authOverlay: HTMLElement;
-  tokenInput: HTMLInputElement;
-  tokenSubmit: HTMLElement;
+  fileInput: HTMLInputElement;
+
+  // templates
+  tplBreadcrumbItem: HTMLTemplateElement;
+  tplTable: HTMLTemplateElement;
+  tplEmpty: HTMLTemplateElement;
+  tplLocked: HTMLTemplateElement;
+  tplFileRow: HTMLTemplateElement;
+  tplToast: HTMLTemplateElement;
+  tpl404: HTMLTemplateElement;
 }
+/** * Elemen yang lahir dari template 'tpl-table'
+ */
+export interface TableElements {
+  mainTable: HTMLTableElement;
+  bodyTable: HTMLTableSectionElement;
+}
+
+/** * Elemen yang lahir dari template 'tpl-locked'
+ */
+export interface LockedElements {
+  lockedState: HTMLElement;
+  btnRetry: HTMLAnchorElement;
+}
+
+type link = {
+  href: string;
+  method: string;
+};
+
+export type links = {
+  download?: link;
+  delete?: link;
+  preview?: link;
+  contents?: link;
+};
 
 export interface FileItem {
   name: string;
   path: string;
-  is_dir: boolean;
   size_byte: number | null;
   modified_at: number;
-  mime_type: string | null;
+  type: string | null;
+  _links: links;
 }
 
-export interface ProgressData {
-  percent: number;
-  label: string;
-  cancelAction: () => void;
+export interface FileItemsResponse {
+  items: FileItem[] | null;
+  _links: {
+    upload: link;
+  };
 }
 
 export interface SetupOptions {
-  elements: Elements;
-  onAuth: (token: string) => void;
+  elements: GlobalElements;
   onUpload: (files: FileList) => void;
   onCancel: () => void;
   onReset: () => void;
+}
+
+export interface uiStateType {
+  loading: boolean;
+  error: string;
+  notification: string;
+}
+
+export interface ProgressView {
+  label: string;
+  percent: number | null; // null = indeterminate
+  abortHook?: () => void;
 }
